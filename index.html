@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Dompet Grace — pemasukan &amp; pengeluaran bb</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500;600&display=swap"
+    rel="stylesheet"
+  />
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <meta name="theme-color" content="#080914" />
+  <link rel="icon" href="icon-192.png" />
+  <link rel="apple-touch-icon" href="icon-192.png" />
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"/>
+            <path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/>
+          </svg>
+        </span>
+        <div>
+          <h1 class="brand-title">Dompet Grace</h1>
+          <p class="brand-subtitle">pemasukan &amp; pengeluaran bb</p>
+        </div>
+      </div>
+
+      <div class="topbar-actions">
+        <button type="button" id="themeToggleBtn" class="btn-secondary btn-icon-only" aria-label="Ganti tema terang atau gelap" title="Ganti tema">
+          <span id="themeIcon" aria-hidden="true">☾</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Period Controls -->
+    <section class="period-bar" aria-label="Navigasi periode">
+      <div class="period-tabs" id="periodTabs" role="tablist" aria-label="Pilih periode">
+        <button type="button" class="period-tab" data-view="hari" role="tab" aria-selected="false">Harian</button>
+        <button type="button" class="period-tab is-active" data-view="bulan" role="tab" aria-selected="true">Bulanan</button>
+        <button type="button" class="period-tab" data-view="tahun" role="tab" aria-selected="false">Tahunan</button>
+      </div>
+
+      <div class="period-nav">
+        <button type="button" id="periodPrevBtn" class="step-btn" aria-label="Periode sebelumnya">‹</button>
+        <div id="periodLabel" class="period-label" aria-live="polite" tabindex="-1"></div>
+        <button type="button" id="periodNextBtn" class="step-btn" aria-label="Periode berikutnya">›</button>
+        <button type="button" id="periodNowBtn" class="now-btn" hidden>Bulan ini</button>
+      </div>
+    </section>
+
+    <!-- Primary Above-the-Fold Area: Summary + Quick Entry -->
+    <section class="primary-grid" aria-label="Ringkasan dan catat transaksi">
+      <div class="hero-card">
+        <div class="hero-top">
+          <div>
+            <p id="heroLabel" class="hero-label">Selisih bulan ini</p>
+            <p id="netBalance" class="hero-balance">Rp0</p>
+          </div>
+          <div class="hero-badges">
+            <span id="statusPill" class="status-pill is-even">Impas</span>
+            <span id="savingsBadge" class="savings-pill">Tabungan 0%</span>
+          </div>
+        </div>
+
+        <p id="summaryPeriodNote" class="hero-note">0 transaksi pada periode ini</p>
+
+        <div class="hero-metrics">
+          <div class="metric-box">
+            <div class="metric-head">
+              <span class="metric-dot income-dot"></span>
+              <span>Pemasukan</span>
+            </div>
+            <p id="totalIncome" class="metric-value">Rp0</p>
+          </div>
+
+          <div class="metric-box">
+            <div class="metric-head">
+              <span class="metric-dot expense-dot"></span>
+              <span>Pengeluaran</span>
+            </div>
+            <p id="totalExpense" class="metric-value">Rp0</p>
+          </div>
+        </div>
+
+        <div class="hero-extra-stats">
+          <div class="extra-stat">
+            <span id="avgStatLabel" class="extra-k">Rata-rata / hari</span>
+            <span id="avgStatVal" class="extra-v">Rp0</span>
+          </div>
+          <div class="extra-stat">
+            <span id="peakStatLabel" class="extra-k">Hari terboros</span>
+            <span id="peakStatVal" class="extra-v">–</span>
+          </div>
+        </div>
+
+        <div class="ratio-track" aria-hidden="true">
+          <div id="incomeRatioBar" class="ratio-fill-income" style="width: 50%"></div>
+        </div>
+      </div>
+
+      <!-- Quick Transaction Form -->
+      <section class="panel form-panel" id="formPanel" aria-labelledby="formHeading">
+        <div class="panel-header form-panel-head">
+          <div>
+            <h2 id="formHeading" class="panel-title">Catat transaksi</h2>
+            <p id="formSubtitle" class="panel-subtitle">Tambah pemasukan atau pengeluaran baru</p>
+          </div>
+          <div class="form-head-actions">
+            <button type="button" id="cancelEditBtn" class="btn-ghost-sm" hidden>Batal edit</button>
+            <button type="button" id="sheetCloseBtn" class="sheet-close-btn" aria-label="Tutup formulir">×</button>
+          </div>
+        </div>
+
+        <form id="transactionForm" class="tx-form" novalidate autocomplete="off">
+          <div class="type-toggle" role="radiogroup" aria-label="Jenis transaksi">
+            <button
+              type="button"
+              id="typeExpenseBtn"
+              class="type-btn is-active"
+              data-type="expense"
+              aria-pressed="true"
+            >
+              Pengeluaran
+            </button>
+            <button
+              type="button"
+              id="typeIncomeBtn"
+              class="type-btn"
+              data-type="income"
+              aria-pressed="false"
+            >
+              Pemasukan
+            </button>
+          </div>
+
+          <div class="field">
+            <label for="amountInput">Nominal (Rp)</label>
+            <div class="amount-input-wrap" id="amountWrap">
+              <span class="currency-prefix" aria-hidden="true">Rp</span>
+              <input
+                id="amountInput"
+                name="amount"
+                type="text"
+                inputmode="numeric"
+                placeholder="0"
+                required
+              />
+            </div>
+            <div class="quick-amounts" aria-label="Nominal cepat">
+              <button type="button" class="chip-btn" data-add="25000">+25rb</button>
+              <button type="button" class="chip-btn" data-add="50000">+50rb</button>
+              <button type="button" class="chip-btn" data-add="100000">+100rb</button>
+              <button type="button" class="chip-btn" data-add="500000">+500rb</button>
+            </div>
+          </div>
+
+          <div class="field-row">
+            <div class="field">
+              <label for="categorySelect">Kategori</label>
+              <select id="categorySelect" name="category" required></select>
+            </div>
+
+            <div class="field">
+              <label for="dateInput">Tanggal</label>
+              <input id="dateInput" name="date" type="date" required />
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="noteInput">Keterangan <span class="opt-label">(opsional)</span></label>
+            <input
+              id="noteInput"
+              name="note"
+              type="text"
+              maxlength="80"
+              placeholder="Mis. nasi padang, kopi susu"
+            />
+          </div>
+
+          <p id="formError" class="form-error" role="alert" hidden></p>
+
+          <button type="submit" id="submitBtn" class="btn-primary">Simpan pengeluaran</button>
+        </form>
+      </section>
+    </section>
+
+    <!-- Analytics Band: Bar Chart + Comparison & Category Donut -->
+    <section class="analytics-grid" aria-label="Analitik keuangan">
+      <section class="panel chart-panel" aria-labelledby="barChartHeading">
+        <div class="chart-panel-head">
+          <div>
+            <h2 id="barChartHeading" class="panel-title">Grafik arus kas</h2>
+            <p id="chartReadoutLabel" class="panel-subtitle">Pilih batang untuk melihat rincian</p>
+          </div>
+          <div class="chart-controls">
+            <div class="chart-readout-vals">
+              <span class="ro-chip is-in">Masuk <b id="roIn">Rp0</b></span>
+              <span class="ro-chip is-out">Keluar <b id="roOut">Rp0</b></span>
+            </div>
+            <div class="filter-tabs" id="metricTabs" role="group" aria-label="Metrik grafik">
+              <button type="button" class="filter-tab is-active" data-metric="out">Pengeluaran</button>
+              <button type="button" class="filter-tab" data-metric="in">Pemasukan</button>
+            </div>
+          </div>
+        </div>
+
+        <div id="barChart" class="bar-chart-host" role="group" aria-label="Grafik batang. Gunakan panah kiri dan kanan untuk memilih batang."></div>
+      </section>
+
+      <!-- Comparison + Donut Insights Card -->
+      <div class="insights-card">
+        <div class="compare-block">
+          <div class="compare-head">
+            <div>
+              <h2 class="card-kicker">Perbandingan periode</h2>
+              <p id="compareSubtitle" class="budget-sub">Dibanding periode sebelumnya</p>
+            </div>
+            <span id="compareBadge" class="compare-badge is-neutral">Stabil</span>
+          </div>
+
+          <div class="compare-grid">
+            <div class="compare-item">
+              <span class="compare-k">Pengeluaran lalu</span>
+              <strong id="prevExpenseVal" class="compare-v">Rp0</strong>
+            </div>
+            <div class="compare-item">
+              <span class="compare-k">Selisih pengeluaran</span>
+              <strong id="diffExpenseVal" class="compare-v">Rp0</strong>
+            </div>
+          </div>
+        </div>
+
+        <div class="chart-divider"></div>
+
+        <div class="donut-head">
+          <h3 class="card-kicker-sm">Komposisi kategori</h3>
+          <div class="mini-seg" id="donutTabs" role="group" aria-label="Kategori grafik donat">
+            <button type="button" class="mini-seg-btn is-active" data-donut="expense">Pengeluaran</button>
+            <button type="button" class="mini-seg-btn" data-donut="income">Pemasukan</button>
+          </div>
+        </div>
+
+        <div class="donut-block">
+          <div class="donut-wrap">
+            <svg id="donutChart" class="donut-svg" viewBox="0 0 120 120" aria-label="Grafik proporsi kategori"></svg>
+            <div class="donut-center">
+              <span class="donut-center-label">Kategori</span>
+              <strong id="donutCenterCount" class="donut-center-val">0</strong>
+            </div>
+          </div>
+          <div id="categoryBreakdown" class="donut-legend"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Full-Width History Panel -->
+    <main class="history-section">
+      <section class="panel list-panel" aria-labelledby="historyHeading">
+        <div class="panel-header list-header">
+          <div>
+            <h2 id="historyHeading" class="panel-title">Riwayat transaksi</h2>
+            <p id="txCountLabel" class="panel-subtitle">0 transaksi</p>
+          </div>
+
+          <div class="filter-tabs" role="tablist" aria-label="Filter jenis transaksi">
+            <button type="button" class="filter-tab is-active" data-filter="all">Semua</button>
+            <button type="button" class="filter-tab" data-filter="income">Pemasukan</button>
+            <button type="button" class="filter-tab" data-filter="expense">Pengeluaran</button>
+          </div>
+        </div>
+
+        <div class="search-bar">
+          <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="11" cy="11" r="8"/>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+          <label for="searchInput" class="sr-only">Cari transaksi</label>
+          <input
+            id="searchInput"
+            type="search"
+            placeholder="Cari keterangan atau kategori..."
+          />
+        </div>
+
+        <ul id="transactionList" class="tx-list" aria-live="polite"></ul>
+
+        <div id="emptyState" class="empty-state" hidden>
+          <p class="empty-title">Belum ada transaksi pada periode ini</p>
+          <p class="empty-desc">
+            Catat pemasukan atau pengeluaran baru, atau pindah ke periode lain.
+          </p>
+        </div>
+      </section>
+    </main>
+
+    <!-- Bottom Utility Actions -->
+    <footer class="footer-actions" aria-label="Kelola data">
+      <button type="button" id="exportCsvBtn" class="btn-secondary">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="7 10 12 15 17 10"/>
+          <line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        Unduh CSV
+      </button>
+      <button type="button" id="resetOpenBtn" class="btn-secondary btn-danger-outline">
+        Reset semua
+      </button>
+    </footer>
+  </div>
+
+  <!-- Reset confirmation modal -->
+  <div id="resetModalScrim" class="modal-scrim" hidden>
+    <div class="modal-card" role="alertdialog" aria-modal="true" aria-labelledby="resetModalTitle" aria-describedby="resetModalDesc">
+      <h2 id="resetModalTitle" class="modal-title">Reset semua catatan?</h2>
+      <p id="resetModalDesc" class="modal-desc">
+        Seluruh transaksi pemasukan dan pengeluaran akan dihapus. Anda masih bisa mengurungkannya selama 5 detik setelah reset.
+      </p>
+      <div class="modal-actions">
+        <button type="button" id="resetCancelBtn" class="btn-secondary">Batal</button>
+        <button type="button" id="resetConfirmBtn" class="btn-danger-solid">Ya, hapus semua</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mobile bottom action bar & sheet scrim -->
+  <div class="mobile-actionbar" id="mobileActionbar" role="group" aria-label="Catat transaksi cepat">
+    <button type="button" class="mab-btn mab-out" data-open-sheet="expense">
+      <span aria-hidden="true">−</span> Pengeluaran
+    </button>
+    <button type="button" class="mab-btn mab-in" data-open-sheet="income">
+      <span aria-hidden="true">+</span> Pemasukan
+    </button>
+  </div>
+  <div id="sheetScrim" class="sheet-scrim" hidden></div>
+
+  <!-- 5-second Undo Toast -->
+  <div id="toast" class="toast" role="status" aria-live="polite" hidden>
+    <span id="toastText"></span>
+    <button type="button" id="toastUndoBtn" class="toast-undo" hidden>Urungkan</button>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
